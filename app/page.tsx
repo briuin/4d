@@ -1,6 +1,7 @@
 "use client";
 import useAxios from "@/hooks/useAxios";
 import useMagnumLotteryDraws from "@/hooks/useMagnumLotteryDraws";
+import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
 const LotteryDrawItem: React.FC<{ draw: MagnumLotteryDraw }> = ({ draw }) => {
@@ -38,12 +39,19 @@ const LotteryDrawItem: React.FC<{ draw: MagnumLotteryDraw }> = ({ draw }) => {
 
 export default function Home() {
   const [magnums, setMagnums] = useState<MagnumLotteryDraw[]>([]);
-  const [date, setDate] = useState<string>("07-06-2024");
+  const [date, setDate] = useState<string>(dayjs().format("DD-MM-YYYY")); // sample "07-06-2024"
+  const [appearanceCounts, setAppearanceCounts] = useState<
+    [string, number][] | null
+  >(null);
 
   const { request } = useAxios<Magnum>();
 
-  const { postLotteryDraw, getLotteryDraws, getDrawsInRange } =
-    useMagnumLotteryDraws();
+  const {
+    postLotteryDraw,
+    getLotteryDraws,
+    getDrawsInRange,
+    calculateAppearances,
+  } = useMagnumLotteryDraws();
 
   const fetchData = async () => {
     const { data, error } = await request(
@@ -59,6 +67,9 @@ export default function Home() {
     const fetchLottery = async () => {
       const data = await getLotteryDraws();
       setMagnums(data);
+      const counts = calculateAppearances(data);
+      const sortedCounts = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      setAppearanceCounts(sortedCounts);
     };
 
     fetchLottery();
@@ -83,6 +94,22 @@ export default function Home() {
 
   return (
     <div>
+      {appearanceCounts && (
+        <div className="mt-4">
+          <h2 className="text-lg font-semibold">Appearance Counts</h2>
+          <div className="grid grid-cols-10 gap-4">
+            {appearanceCounts.map(([prize, count]) => (
+              <div
+                key={prize}
+                className="p-2 border rounded-lg bg-gray-100 text-gray-900"
+              >
+                <span className="font-semibold">{prize}:</span> {count}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {magnums.length && (
         <ul>
           {magnums.map((item) => (
